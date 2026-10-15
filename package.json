@@ -1,0 +1,37 @@
+{
+  "name": "imd-atlas",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview",
+    "test": "node --experimental-strip-types --test tests/data.test.ts",
+    "test:browser": "node scripts/validate-browser.mjs",
+    "snapshot": "node --experimental-strip-types scripts/capture-snapshot.mjs",
+    "social": "node scripts/generate-social.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/dm-sans": "^5.2.0",
+    "d3-force": "^3.0.0",
+    "lucide-react": "^0.468.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/d3-force": "^3.0.10",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "axe-core": "^4.10.3",
+    "playwright": "^1.56.1",
+    "typescript": "~5.9.3",
+    "vite": "^7.1.12"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f7f8f5"/>
+  <path d="M0 98H1200" stroke="#e0e5dc"/>
+  <g fill="#244f36"><circle cx="71" cy="53" r="15"/><circle cx="94" cy="30" r="9"/><circle cx="99" cy="62" r="5"/></g>
+  <text x="124" y="61" fill="#202b25" font-family="Arial,sans-serif" font-size="28" font-weight="600">IMD Atlas</text>
+  <text x="64" y="262" fill="#202b25" font-family="Arial,sans-serif" font-size="62" font-weight="600" letter-spacing="-2">The ecosystem,</text>
+  <text x="64" y="335" fill="#244f36" font-family="Arial,sans-serif" font-size="62" font-weight="600" letter-spacing="-2">connected.</text>
+  <text x="66" y="391" fill="#647067" font-family="Arial,sans-serif" font-size="23">Explore IMD holders and their onchain connections.</text>
+  <text x="66" y="551" fill="#647067" font-family="Arial,sans-serif" font-size="18">IMD · sIMD · imdUSD</text>
+  <g stroke="#9eb593" stroke-width="2"><path d="M897 309L1054 199M897 309L1054 441M897 309L775 462M897 309L787 185M1054 199L1110 323"/></g>
+  <g stroke-width="2"><circle cx="897" cy="309" r="93" fill="#d5eaa6" stroke="#729944"/><circle cx="1054" cy="199" r="49" fill="#e6def4" stroke="#af97ce"/><circle cx="1054" cy="441" r="63" fill="#e6def4" stroke="#af97ce"/><circle cx="775" cy="462" r="34" fill="#e6ede0" stroke="#9eb593"/><circle cx="787" cy="185" r="29" fill="#e6ede0" stroke="#9eb593"/><circle cx="1110" cy="323" r="27" fill="#e6ede0" stroke="#9eb593"/><circle cx="964" cy="128" r="20" fill="#e6ede0" stroke="#9eb593"/><circle cx="903" cy="488" r="22" fill="#e6ede0" stroke="#9eb593"/><circle cx="729" cy="307" r="20" fill="#e6def4" stroke="#af97ce"/><circle cx="1145" cy="477" r="16" fill="#e6ede0" stroke="#9eb593"/></g>
+  <text x="897" y="321" text-anchor="middle" fill="#32491c" font-family="Arial,sans-serif" font-size="34" font-weight="600">IMD</text>
+  <text x="1054" y="206" text-anchor="middle" fill="#5d437d" font-family="Arial,sans-serif" font-size="18">sIMD</text>
+  <text x="1054" y="448" text-anchor="middle" fill="#5d437d" font-family="Arial,sans-serif" font-size="18">imdUSD</text>
+</svg>
