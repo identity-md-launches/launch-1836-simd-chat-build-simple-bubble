@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from 'd3-force';
-import type { SimulationNodeDatum } from 'd3-force';
 import { Minus, Plus, Scan, SearchX } from 'lucide-react';
 import type { Link, MapHolder, Token } from './types';
 import { formatAmount, formatShare, shortAddress } from './data';
+import { layoutBubbles, minimumMapHeight } from './bubbleLayout';
 
-type Node = MapHolder & SimulationNodeDatum & { radius: number; x: number; y: number };
 type Props = {
   holders: MapHolder[];
   links: Link[];
@@ -53,33 +51,7 @@ export default function BubbleMap({ holders, links, token, selected, onSelect, s
   }, []);
   useEffect(() => { setZoom(1); setPan({ x: 0, y: 0 }); setHovered(null); }, [token.id, holders]);
 
-  const nodes = useMemo(() => {
-    const { width, height } = size;
-    const maxShare = Math.max(...holders.map(h => h.share), 0.01);
-    const maxRadius = Math.min(width * 0.155, height * 0.22, 105);
-    const nodes: Node[] = holders.map((h, i) => {
-      const angle = i * 2.399963;
-      const distance = Math.sqrt(i) * 32;
-      return { ...h, x: width / 2 + Math.cos(angle) * distance, y: height / 2 + Math.sin(angle) * distance, radius: Math.max(15, Math.sqrt(h.share / maxShare) * maxRadius) };
-    });
-    const present = new Set(nodes.map(n => n.address.toLowerCase()));
-    const edges = links.filter(l => present.has(l.source) && present.has(l.target)).map(l => ({ source: l.source, target: l.target }));
-    const simulation = forceSimulation(nodes)
-      .force('charge', forceManyBody().strength(-35))
-      .force('x', forceX(width / 2).strength(0.055))
-      .force('y', forceY(height / 2).strength(0.075))
-      .force('collide', forceCollide<Node>().radius(n => n.radius + 5).iterations(3))
-      .force('link', forceLink<Node, { source: string | Node; target: string | Node }>(edges).id(n => n.address.toLowerCase()).distance(l => (l.source as Node).radius + (l.target as Node).radius + 22).strength(0.13))
-      .stop();
-    for (let step = 0; step < 260; step++) {
-      simulation.tick();
-      for (const node of nodes) {
-        node.x = Math.max(node.radius + 9, Math.min(width - node.radius - 9, node.x));
-        node.y = Math.max(node.radius + 20, Math.min(height - node.radius - 48, node.y));
-      }
-    }
-    return nodes;
-  }, [holders, links, size]);
+  const nodes = useMemo(() => layoutBubbles(holders, links, size.width, size.height), [holders, links, size]);
   const byAddress = new Map(nodes.map(n => [n.address.toLowerCase(), n]));
   const active = nodes.find(n => n.address === hovered);
   const selectedLinks = new Set(links.filter(l => l.source === selected?.toLowerCase() || l.target === selected?.toLowerCase()).flatMap(l => [l.source, l.target]));
@@ -101,7 +73,7 @@ export default function BubbleMap({ holders, links, token, selected, onSelect, s
     }} onPointerMove={e => {
       if (!drag.current) return;
       setPan({ x: drag.current.panX + e.clientX - drag.current.startX, y: drag.current.panY + e.clientY - drag.current.startY });
-    }} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }} style={{ touchAction: zoom > 1 ? 'none' : 'pan-y' }}>
+    }} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }} style={{ touchAction: zoom > 1 ? 'none' : 'pan-y', minHeight: minimumMapHeight(size.width, holders.length) }}>
     {holders.length === 0 ? <div className="map-empty"><SearchX size={32} aria-hidden="true" /><h3>No matching holders</h3><p>Try a different size, connection filter or address.</p><button className="primary-button" onClick={onReset}>Clear filters</button></div> : <>
       <div className="map-plane" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
         <svg className="connection-lines" width={size.width} height={size.height} aria-hidden="true">

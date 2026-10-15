@@ -92,6 +92,130 @@ try {
       await page.screenshot({ path: join(out, `chromium-${width}.png`), fullPage: false });
     }
   });
+  await check('Every token has separated, bounded bubbles with reachable centers across responsive breakpoints', async () => {
+    apiMode = 'offline';
+    const measurements = [];
+    for (const width of [280, 320, 390, 599, 600, 768, 999, 1000, 1199, 1200, 1250, 1251, 1440, 1600]) {
+      await page.setViewportSize({ width, height: 844 });
+      for (const id of ['imd', 'simd', 'imdusd']) {
+        await tokenButton(id).click(); await settle();
+        await page.keyboard.press('Escape'); await page.mouse.move(0, 0);
+        await page.waitForTimeout(100);
+        const geometry = await page.evaluate(() => {
+          const stage = document.querySelector('.map-stage').getBoundingClientRect();
+          const nodes = [...document.querySelectorAll('.bubble')].map(el => {
+            const r = el.getBoundingClientRect();
+            return { el, address: el.dataset.holderAddress, x: r.x + r.width / 2, y: r.y + r.height / 2, radius: r.width / 2 };
+          });
+          let minGap = Infinity;
+          for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+            const a = nodes[i], b = nodes[j];
+            minGap = Math.min(minGap, Math.hypot(a.x - b.x, a.y - b.y) - a.radius - b.radius);
+          }
+          const outside = nodes.filter(n => n.x - n.radius < stage.left + 8.9 || n.x + n.radius > stage.right - 8.9 || n.y - n.radius < stage.top + 19.9 || n.y + n.radius > stage.bottom - 47.9).map(n => n.address);
+          const covered = nodes.filter(n => {
+            n.el.scrollIntoView({ block: 'center', behavior: 'instant' });
+            const r = n.el.getBoundingClientRect();
+            return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('.bubble') !== n.el;
+          }).map(n => n.address);
+          scrollTo(0, 0);
+          return { count: nodes.length, minGap, minRadius: Math.min(...nodes.map(n => n.radius)), maxRadius: Math.max(...nodes.map(n => n.radius)), outside, covered, stageHeight: stage.height, overflow: document.documentElement.scrollWidth > innerWidth };
+        });
+        assert.equal(geometry.count, snapshots[id].holders.length);
+        assert.ok(geometry.minGap >= 9.85, `${id} at ${width}: ${JSON.stringify(geometry)}`);
+        assert.ok(geometry.minRadius >= 15);
+        assert.deepEqual(geometry.outside, []); assert.deepEqual(geometry.covered, []);
+        assert.equal(geometry.overflow, false);
+        measurements.push({ width, token: id, ...geometry });
+        if (id === 'simd' && [320, 390, 768, 1200, 1440].includes(width)) {
+          await page.screenshot({ path: join(out, `simd-${width}-first-screen.png`) });
+          await page.locator('.map-stage').screenshot({ path: join(out, `simd-${width}-map.png`) });
+        }
+      }
+    }
+    await writeFile(join(out, 'bubble-geometry.json'), JSON.stringify(measurements, null, 2));
+    apiMode = 'success';
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await tokenButton('imd').click(); await settle();
+    return { tokenViewportStates: measurements.length, minimumMeasuredGap: Math.min(...measurements.map(m => m.minGap)), coveredCenters: 0 };
+  });
+  await check('Clicking every sIMD bubble center selects that exact holder at 390, 768 and 1200', async () => {
+    apiMode = 'offline';
+    let clicks = 0;
+    for (const width of [390, 768, 1200]) {
+      await page.setViewportSize({ width, height: 844 });
+      await tokenButton('simd').click(); await settle();
+      for (const address of await page.locator('.bubble').evaluateAll(elements => elements.map(e => e.dataset.holderAddress))) {
+        // Scroll from a neutral pointer position so an unrelated hover tooltip
+        // does not cover the next target during this geometry regression.
+        await page.mouse.move(0, 0);
+        await page.keyboard.press('Escape');
+        const bubble = page.locator(`.bubble[data-holder-address="${address}"]`);
+        await bubble.evaluate(el => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+        const box = await bubble.boundingBox();
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        assert.equal((await page.locator('.full-address').textContent()).toLowerCase(), address);
+        await page.getByRole('button', { name: 'Close holder details' }).click();
+        await page.waitForFunction(address => document.activeElement.dataset.holderAddress === address, address);
+        clicks++;
+      }
+    }
+    apiMode = 'success';
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await tokenButton('imd').click(); await settle();
+    return { centerClicks: clicks };
+  });
+  await check('Token-type changes preserve holder size, connection and address filters', async () => {
+    await openFilters();
+    await page.selectOption('#holder-size', 'small');
+    await page.selectOption('#token-type', 'mintable'); await settle();
+    assert.equal(await page.locator('#holder-size').inputValue(), 'small');
+    assert.equal(await bubbles(), 0);
+    await page.selectOption('#token-type', 'fixed'); await settle();
+    assert.equal(await page.locator('#holder-size').inputValue(), 'small');
+    await page.selectOption('#holder-size', 'large');
+    await page.selectOption('#connections', 'connected');
+    await page.getByRole('searchbox').fill(snapshots.simd.holders[0].address);
+    await page.selectOption('#token-type', 'mintable'); await settle();
+    assert.equal(await page.locator('#holder-size').inputValue(), 'large');
+    assert.equal(await page.locator('#connections').inputValue(), 'connected');
+    assert.equal(await page.getByRole('searchbox').inputValue(), snapshots.simd.holders[0].address);
+    assert.equal(await bubbles(), 1);
+    await page.locator('.bubble').click();
+    assert.equal(await page.locator('.full-address').textContent(), snapshots.simd.holders[0].address);
+    await page.selectOption('#token-type', 'fixed'); await settle();
+    assert.equal(await page.locator('.holder-details').count(), 0);
+    assert.equal(await page.locator('#holder-size').inputValue(), 'large');
+    assert.equal(await page.locator('#connections').inputValue(), 'connected');
+    assert.equal(await page.getByRole('searchbox').inputValue(), snapshots.simd.holders[0].address);
+    await page.getByRole('button', { name: 'Reset filters' }).click();
+  });
+  await check('Closing a connected holder excluded by search returns keyboard focus to search in map and list views', async () => {
+    await tokenButton('imdusd').click(); await settle();
+    const address = '0xabe0cdd036456fcc1b64d1ddb7aa3bdf7d5b98b1';
+    const peer = '0x000000000004444c5dc75cb358380d2e3de08a90';
+    for (const view of ['map', 'list']) {
+      await page.getByRole('searchbox').fill(address);
+      await page.getByRole('button', { name: view === 'map' ? 'Show bubble map' : 'Show holder list' }).click();
+      await page.locator(view === 'map' ? '.bubble' : '.full-list .holder-row').focus();
+      await page.keyboard.press('Enter');
+      await page.locator('.connection-person').filter({ hasText: '0x0000…8a90' }).focus();
+      await page.keyboard.press('Enter');
+      assert.equal((await page.locator('.full-address').textContent()).toLowerCase(), peer);
+      await page.getByRole('button', { name: 'Close holder details' }).focus();
+      await page.keyboard.press('Enter');
+      await page.waitForFunction(() => document.activeElement === document.querySelector('input[type="search"]'));
+      assert.equal(await page.locator(`[data-holder-address="${peer}"]`).count(), 0);
+      assert.equal(await page.getByRole('searchbox').inputValue(), address);
+      assert.equal(await page.getByRole('searchbox').evaluate(el => getComputedStyle(el).outlineStyle), 'solid');
+    }
+    await page.screenshot({ path: join(out, 'search-focus-return.png') });
+    await page.getByRole('button', { name: 'Show bubble map' }).click();
+    await tokenButton('imd').click(); await settle();
+  });
+  await check('Dashboard headings identify the map, token directory and ecosystem introduction', async () => {
+    assert.deepEqual(await page.locator('h1, #ecosystem-title, #about-title').allTextContents(), ['Explore IMD holders', 'Ecosystem tokens', 'About the IMD ecosystem']);
+  });
   await check('Holder-size and connection filters work, including empty-state recovery', async () => {
     await openFilters();
     await page.selectOption('#holder-size', 'large');

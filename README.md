@@ -46,18 +46,19 @@ The token directory distinguishes protocol issuance from availability: sIMD shar
 
 ## Validation
 
-The worker ran these checks against the finished production export:
+The revision reproduced and fixed all four reopened findings. The worker ran these checks against the rebuilt production export; detailed responses are in `.imd-responses.json`:
 
 | Check | Actual result |
 | --- | --- |
 | `npm run typecheck` | Passed; TypeScript strict mode, no emit |
-| `npm test` | 13 data tests passed |
+| `npm test` | 18 tests passed: 13 data tests and 5 layout regression tests |
 | `npm run build` | Passed; Vite production export, no build warnings |
-| `npm run test:browser` | 18 Chromium checks passed; 0 failed |
+| `npm run test:browser` | 23 Chromium checks passed; 0 failed |
 | axe-core | 0 reported violations at 390 and 1440, including selected-holder state |
 | Pinned `taste@1` probe | 16/16 checks passed at 320, 390 and 1440 |
 | Live Ethereum API | Actual browser requests succeeded for all three tokens; no API mocks in the live inspection |
-| Responsive inspection | 320, 390, 768, 1024 and 1440; no horizontal overflow; 200% text enlargement also checked |
+| Bubble geometry and selection | 42 states across all tokens at 14 widths from 280 to 1600; 1,722 reachable centers, no overlaps; 150 actual sIMD center clicks selected the correct holder |
+| Responsive inspection | No horizontal overflow across the geometry matrix; 200% root-text enlargement also checked |
 
 The main product and token/filter actions are visible on the first screen at 390 × 844. The title, description, favicon, `og:title`, `og:image` and a real local 1200 × 630 share image are present.
 
@@ -73,7 +74,9 @@ npm run test:browser
 
 The browser script starts and closes its own HTTP server, serves `dist/` under `/preview/`, and writes results into `test/scratch/validation/`. Its deterministic API responses come from the real bundled snapshot; it deliberately simulates loading, HTTP failure, malformed responses, partial history and network failure. Its result records clearly separate those tests from live-network verification. WebKit is attempted independently and is reported as unperformed if its runtime cannot launch.
 
-**Limitations:** WebKit downloaded but could not launch because the available runtime lacks its system libraries, including GTK 4, GStreamer and ICU 76. Chromium checks are not Safari or physical-device tests. Native screen-reader sessions, native browser zoom and a physical touch device were not available. The 200% check enlarges root text; it is not native browser zoom. The accessibility scan leaves manual contrast review for the decorative map watermark; passing a scan does not establish full accessibility compliance.
+**Limitations:** WebKit downloaded but could not launch because the available runtime lacks its system libraries, including GTK 4 and GStreamer. The supplied browser connector also could not start its configured Chrome; rendered checks used a separate temporary Playwright Chromium installation. Chromium checks are not Safari or physical-device tests. Native screen-reader sessions, native browser zoom and a physical touch device were not available. The 200% check enlarges root text; it is not native browser zoom. The accessibility scan retains color-contrast manual-review entries, and the probe leaves two text boxes over non-solid backgrounds unmeasured; passing a scan does not establish full accessibility compliance.
+
+The map now fits the complete radius set while preserving proportional areas above a 15px radius floor, with a 10px target gap and extra map height when minimum targets need it. Changing Token type preserves holder-size, connection and search filters. Closing details returns focus to the selected holder when available, otherwise to search.
 
 The public Blockscout instance is an external dependency and may rate-limit, lag Ethereum, or change its API. Its documentation announces eventual deprecation of per-instance endpoints. The current endpoints were verified working; the dated snapshot remains useful if they stop responding. See [the full validation record](artifacts/validation.md) and [DESIGN.md](DESIGN.md).
 

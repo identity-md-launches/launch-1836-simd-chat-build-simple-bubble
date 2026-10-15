@@ -8,7 +8,7 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test tests/data.test.ts",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
     "test:browser": "node scripts/validate-browser.mjs",
     "snapshot": "node --experimental-strip-types scripts/capture-snapshot.mjs",
     "social": "node scripts/generate-social.mjs"

@@ -4,7 +4,7 @@
 
 IMD Atlas is an English, read-only Ethereum holder explorer. Its visual idea is a quiet, pale canvas of bubbles, with size showing holdings and restrained color distinguishing wallets, connected wallets and contracts. A compact tool interface keeps token selection, filtering and the map ahead of explanatory content.
 
-The source of truth is `src/styles.css`, with UI patterns in `src/App.tsx` and the map in `src/BubbleMap.tsx`. There is one light theme. The design uses flat surfaces, deliberate spacing and thin structural borders rather than shadows, gradients or marketing decoration.
+The source of truth is `src/styles.css`, with UI patterns in `src/App.tsx` and the map in `src/BubbleMap.tsx` with its layout constraints in `src/bubbleLayout.ts`. There is one light theme. The design uses flat surfaces, deliberate spacing and thin structural borders rather than shadows, gradients or marketing decoration.
 
 ## Colors
 
@@ -30,7 +30,7 @@ All core colors use semantic CSS custom properties in `src/styles.css`.
 
 The map canvas is `#fafbf8`, with a 20px dot grid in `#dce2d7`. Token emblems use green for IMD, `#e7e0f4` with `#645083` for sIMD, and `#f0e3cb` with `#83602e` for imdUSD. These emblems identify tokens; they do not encode graph connectivity.
 
-Contract classification takes precedence over the connected-wallet color. The legend, tooltips, holder type, connection count and list view carry the same information in text. Fresh/loading/snapshot statuses always have labels as well as dots. The evidence and measured contrast pairs are in `artifacts/validation.md` and `artifacts/contrast.json`.
+Contract classification takes precedence over the connected-wallet color. The legend, tooltips, holder type, connection count and list view carry the same information in text. Fresh/loading/snapshot statuses always have labels as well as dots. The evidence and measured contrast pairs are in `artifacts/validation.md`.
 
 ## Typography
 
@@ -56,17 +56,19 @@ The spacing tokens are 4, 8, 12, 16, 24, 32 and 48px. Small gaps group related c
 | 600–999px | Horizontal token choices, collapsible filters, map, legend and holder list stacked; 460px map |
 | ≤599px | Compact token tabs and icon view switch; 400px map; one-column token directory and intro; 16px inputs |
 
-At 390 × 844 the header, one-line title, short intro, token choices, filter control, map controls and usable bubbles appear on the first screen. The map starts around 498px from the top. There is no fixed overlay or sticky chrome covering the content.
+These are base map heights. `minimumMapHeight` can increase them to fit all 30px-diameter minimum targets with 10px gaps. The 280px viewport check produces a 418px map; at 320px and above the tested snapshot sets fit their existing base heights. The map returns to its base height when the width or holder count no longer needs the extra space.
+
+At 390 × 844 the header, one-line title, short intro, token choices, filter control, search, view controls and usable bubbles appear on the first screen. The map starts around 498px from the top. There is no fixed overlay or sticky chrome covering the content.
 
 The header and token choices can wrap when text is enlarged. Mobile statistics use `auto-fit` and a rem-based minimum so they also reflow under 200% text enlargement. Map labels switch to rank numbers when the user’s font size no longer fits a bubble; full values remain available through selection and the list. The SVG transfer layer has no text. The map uses explicit clipping for its pan/zoom viewport, while addresses and exact balances wrap freely in the detail panel.
 
-Observed widths: 320, 390, 768, 1024 and 1440. The 200% root-text enlargement check passed at 390. Native browser zoom, physical-device behavior and WebKit rendering remain unverified.
+Observed geometry widths in this revision: 280, 320, 390, 599, 600, 768, 999, 1000, 1199, 1200, 1250, 1251, 1440 and 1600; the existing responsive checks also cover 1024. The 200% root-text enlargement check passed at 390. Native browser zoom, physical-device behavior and WebKit rendering remain unverified.
 
 ## Elevation & Depth
 
 Surfaces use backgrounds and borders only; there are no shadows. Tooltips use a dark opaque surface above bubbles at z-index 5. Map controls sit at z-index 6. Selected bubbles have a 2px ring with a 4px offset; keyboard-focused bubbles use 3px. Other focusable controls have a 2px outline, also offset by 4px.
 
-Tooltip position stays inside the map and moves below a node when there is insufficient room above. It remains open while hovered and closes with Escape. The detail panel is in the document flow, not a modal. On narrow screens selection scrolls to the detail panel, focuses its heading and returns focus to the holder control on close.
+Tooltip position stays inside the map and moves below a node when there is insufficient room above. It remains open while hovered and closes with Escape. The detail panel is in the document flow, not a modal. On narrow screens selection scrolls to the detail panel, focuses its heading and returns focus to the holder control on close. When an observed peer is excluded by the active filters and has no holder control, closing details focuses the existing search input instead.
 
 ## Shapes
 
@@ -77,9 +79,9 @@ Tooltip position stays inside the map and moves below a node when there is insuf
 | Component / pattern | Source and use | States and behavior |
 | --- | --- | --- |
 | `Brand`, `TokenMark` | `src/App.tsx`; local CSS shapes, no remote logos | Home link; decorative emblems excluded from accessible names |
-| Token choices | `App`; buttons with `aria-pressed` in a named group | Selected fill and dot; mintability filter limits available choices |
+| Token choices | `App`; buttons with `aria-pressed` in a named group | Selected fill and dot; mintability filter limits available choices and preserves holder-size, connection and search criteria when it switches to an eligible token |
 | Filters | `App`; native `details`, labeled selects and checkbox | Open on desktop, collapsed on phones; active-filter count; reset; connection filtering disabled when history is incomplete |
-| `BubbleMap` | `src/BubbleMap.tsx`; accepts holders, links, token, selected address and callbacks | D3 computes a deterministic settled layout; native buttons provide keyboard selection; hover/focus tooltip; zoom 1–2×, drag/arrow pan, reset; empty state |
+| `BubbleMap` | `src/BubbleMap.tsx`; accepts holders, links, token, selected address and callbacks | A shared radius scale fits all circles to the usable area, retaining the 15px radius floor. D3 settles the layout, then circle/boundary constraints are resolved and verified with a 10px gap; smaller-scale retries and a minimum-size regular packing provide a bounded fallback. Map height grows when needed. Native buttons provide keyboard selection; hover/focus tooltip; zoom 1–2×, drag/arrow pan, reset; empty state |
 | `HolderList` | `App`; top-eight sidebar and full-list variants | Descending balance rank, selected state, expand/collapse; full address available in accessible name and detail view |
 | `HolderDetails` | `App`; read-only balance and observed-transfer inspector | Full address, copy feedback/failure, explorer link, exact balance disclosure, peer navigation and transaction evidence |
 | `Legend` | `App`; named section with level-two heading | Colors, transfer line, rank explanation and area/minimum-size explanation |
